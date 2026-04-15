@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment — never commit real keys
+.env
+.env.local
+
+# Generated output files
+memo-*.md
+brief-*.md
+slides-*.html
+_temp_pdf_generator.py
+*.pdf
+
+# Misc
+nul
+hello.txt
+archive/

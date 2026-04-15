@@ -1,0 +1,29 @@
+{
+  "name": "investment-analyst",
+  "version": "1.0.0",
+  "description": "AI-powered investment analyst tool using Anthropic API with web search",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts"
+  },
+  "keywords": [
+    "investment",
+    "analyst",
+    "ai",
+    "anthropic",
+    "claude"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "openai": "^6.33.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
