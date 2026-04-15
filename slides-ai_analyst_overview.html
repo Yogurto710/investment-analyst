@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Investment Analyst — Overview</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #080c10;
+    --surface:  #0f1520;
+    --card:     #141c2a;
+    --border:   #1e2a3e;
+    --accent:   #00d4aa;
+    --accent2:  #3b82f6;
+    --gold:     #f59e42;
+    --danger:   #f04f57;
+    --text:     #e2e8f4;
+    --muted:    #7a8ba8;
+    --radius:   12px;
+    --font:     'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  .deck { width: 100vw; height: 100vh; position: relative; overflow: hidden; }
+
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    padding: 48px 72px;
+    opacity: 0;
+    transform: translateX(60px);
+    transition: opacity 0.42s ease, transform 0.42s ease;
+    pointer-events: none;
+  }
+  .slide.active  { opacity: 1; transform: translateX(0); pointer-events: all; }
+  .slide.exit    { opacity: 0; transform: translateX(-60px); }
+
+  /* chrome */
+  .progress-bar { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 0.4s ease; z-index: 100; }
+  .slide-counter { position: fixed; top: 16px; right: 24px; font-size: 12px; color: var(--muted); z-index: 100; font-variant-numeric: tabular-nums; }
+  .nav-dots { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 100; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); cursor: pointer; transition: background 0.3s, transform 0.3s; }
+  .dot.active { background: var(--accent); transform: scale(1.3); }
+  .nav-arrow { position: fixed; top: 50%; transform: translateY(-50%); background: var(--card); border: 1px solid var(--border); color: var(--muted); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; transition: background 0.2s, color 0.2s, border-color 0.2s; z-index: 100; user-select: none; }
+  .nav-arrow:hover { background: var(--accent); color: #000; border-color: var(--accent); }
+  .nav-arrow.prev { left: 20px; }
+  .nav-arrow.next { right: 20px; }
+  .kbd-hint { position: fixed; bottom: 52px; right: 24px; font-size: 11px; color: var(--border); z-index: 100; }
+
+  /* layout */
+  .slide-content { width: 100%; max-width: 1100px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; width: 100%; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; width: 100%; }
+
+  /* typography */
+  .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
+  h1 { font-size: clamp(38px, 5vw, 66px); font-weight: 800; line-height: 1.1; }
+  h2 { font-size: clamp(24px, 3vw, 38px); font-weight: 700; line-height: 1.2; }
+  h3 { font-size: 15px; font-weight: 600; color: var(--accent); margin-bottom: 6px; }
+  p  { color: var(--muted); line-height: 1.7; }
+
+  .gradient-text { background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .gold-text { background: linear-gradient(135deg, var(--gold), #fcd34d); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+  /* cards */
+  .card    { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px 26px; }
+  .card-sm { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; }
+  .card-accent { border-color: var(--accent); background: rgba(0,212,170,0.05); }
+  .card-blue   { border-color: var(--accent2); background: rgba(59,130,246,0.05); }
+  .card-gold   { border-color: var(--gold);    background: rgba(245,158,66,0.05); }
+  .card-dark   { background: rgba(0,0,0,0.3);  border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; }
+
+  /* badges */
+  .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; }
+  .badge-green  { background: rgba(0,212,170,0.15); color: var(--accent); }
+  .badge-blue   { background: rgba(59,130,246,0.15); color: var(--accent2); }
+  .badge-gold   { background: rgba(245,158,66,0.15); color: var(--gold); }
+  .badge-muted  { background: rgba(255,255,255,0.05); color: var(--muted); }
+
+  /* bullets */
+  .bullet-list { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+  .bullet-list li { display: flex; align-items: flex-start; gap: 10px; font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+  .bullet-list li::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); margin-top: 7px; flex-shrink: 0; }
+  .bullet-list li strong { color: var(--text); }
+  .bullet-list.blue li::before { background: var(--accent2); }
+  .bullet-list.gold li::before { background: var(--gold); }
+
+  /* tables */
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th { padding: 9px 14px; text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); }
+  td { padding: 11px 14px; border-bottom: 1px solid var(--border); color: var(--text); line-height: 1.5; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  td:first-child { color: var(--muted); font-size: 12px; white-space: nowrap; }
+
+  /* code */
+  code { font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace; font-size: 12.5px; background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 5px; padding: 2px 7px; color: var(--accent); }
+  .code-block { font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace; font-size: 12px; background: rgba(0,0,0,0.5); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; color: #a8c0d6; line-height: 1.8; white-space: pre; }
+  .code-block .cmd  { color: var(--accent); }
+  .code-block .flag { color: var(--gold); }
+  .code-block .cmt  { color: var(--muted); }
+  .code-block .str  { color: #93c5fd; }
+
+  /* step / pipeline */
+  .step-num { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+  .step-row { display: flex; align-items: flex-start; gap: 14px; }
+  .step-label { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+  .step-desc  { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+
+  /* glow */
+  .bg-glow { position: absolute; border-radius: 50%; filter: blur(130px); pointer-events: none; z-index: 0; }
+  .slide > *:not(.bg-glow) { position: relative; z-index: 1; }
+
+  /* divider */
+  .divider { width: 40px; height: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 2px; margin: 14px 0; }
+
+  /* stat */
+  .stat-val { font-size: clamp(28px, 3.5vw, 44px); font-weight: 800; line-height: 1; }
+  .stat-lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 5px; }
+
+  /* tag row */
+  .tag-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* pipeline connector */
+  .pipe-arrow { color: var(--border); font-size: 20px; display: flex; align-items: center; justify-content: center; padding: 0 4px; }
+
+  /* section label pill */
+  .section-pill { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; background: rgba(0,212,170,0.12); color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+<div class="slide-counter" id="counter">1 / 9</div>
+<button class="nav-arrow prev" id="prevBtn">&#8592;</button>
+<button class="nav-arrow next" id="nextBtn">&#8594;</button>
+<div class="nav-dots" id="dots"></div>
+<div class="kbd-hint">← → to navigate</div>
+
+<div class="deck" id="deck">
+
+  <!-- ── SLIDE 1: Title ─────────────────────────────────────────────── -->
+  <div class="slide active" id="s1">
+    <div class="bg-glow" style="width:700px;height:700px;background:rgba(0,212,170,0.09);top:-200px;right:-150px;"></div>
+    <div class="bg-glow" style="width:500px;height:500px;background:rgba(59,130,246,0.07);bottom:-100px;left:-100px;"></div>
+
+    <div style="text-align:center;max-width:860px;">
+      <div class="eyebrow">Tool Overview</div>
+      <h1 style="margin-bottom:18px;">
+        AI <span class="gradient-text">Investment</span><br>Analyst
+      </h1>
+      <p style="font-size:18px;color:var(--muted);max-width:560px;margin:0 auto 32px;">
+        Research any company. Generate a structured investment memo.<br>
+        <span style="font-size:14px;">Powered by Tavily search + Moonshot AI (Kimi k2.5)</span>
+      </p>
+      <div class="tag-row" style="justify-content:center;">
+        <span class="badge badge-green">Live Web Search</span>
+        <span class="badge badge-blue">Full English Memo</span>
+        <span class="badge badge-gold">Brief Chinese Memo</span>
+        <span class="badge badge-muted">PDF Export</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 2: Two Pipelines ─────────────────────────────────────── -->
+  <div class="slide" id="s2">
+    <div class="slide-content">
+      <div class="eyebrow">Two Modes</div>
+      <h2 style="margin-bottom:24px;">Full Memo vs. Brief Memo</h2>
+
+      <div class="grid-2" style="align-items:start;">
+        <div class="card card-blue" style="height:100%;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+            <span style="font-size:22px;">📄</span>
+            <div>
+              <div style="font-size:16px;font-weight:700;color:var(--text);">Full Memo</div>
+              <div style="font-size:12px;color:var(--muted);">English · 13 sections · 4-step pipeline</div>
+            </div>
+          </div>
+          <ul class="bullet-list blue">
+            <li>Funding history, team, product, market, news</li>
+            <li><strong>Social sentiment</strong> — Reddit, X, HN, review sites</li>
+            <li>Company status: <strong>Active / Acquired / IPO / Defunct</strong></li>
+            <li>Investment recommendation with rationale</li>
+            <li>Optional <strong>PDF export</strong> via reportlab</li>
+          </ul>
+          <div style="margin-top:16px;">
+            <code>npm run dev -- "Stripe"</code>
+          </div>
+        </div>
+
+        <div class="card card-gold" style="height:100%;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+            <span style="font-size:22px;">🀄</span>
+            <div>
+              <div style="font-size:16px;font-weight:700;color:var(--text);">Brief Memo <span style="font-size:12px;color:var(--muted);">（简报）</span></div>
+              <div style="font-size:12px;color:var(--muted);">Chinese · 6 sections · 2-step pipeline</div>
+            </div>
+          </div>
+          <ul class="bullet-list gold">
+            <li>Primary sources: <strong>WeChat (mp.weixin.qq.com)</strong> + official site</li>
+            <li>Designed for early-stage <strong>Chinese startups</strong></li>
+            <li>Inline <strong>[N] source citations</strong> + 待核实 confidence tags</li>
+            <li>分析师评语 — analyst take with follow-up conditions</li>
+            <li>Faster, lighter, China-focused</li>
+          </ul>
+          <div style="margin-top:16px;">
+            <code>npm run dev -- "https://rezona.ai" --brief --name Rezona</code>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 3: Tech Stack ────────────────────────────────────────── -->
+  <div class="slide" id="s3">
+    <div class="slide-content">
+      <div class="eyebrow">Architecture</div>
+      <h2 style="margin-bottom:24px;">How It Works</h2>
+
+      <div class="grid-2" style="align-items:start;margin-bottom:20px;">
+        <div class="card">
+          <h3>Search — Tavily REST API</h3>
+          <ul class="bullet-list" style="margin-top:8px;">
+            <li>5 targeted queries fired <strong>in parallel</strong> per research call</li>
+            <li>Live results — not limited by model training cutoff</li>
+            <li>Relevance score filter <strong>≥ 0.3</strong> drops low-quality hits</li>
+            <li>Domain blocklist removes known noise sources</li>
+            <li>All results assigned <strong>globally sequential [N]</strong> indices</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3 style="color:var(--accent2);">Synthesis — Moonshot AI (Kimi k2.5)</h3>
+          <ul class="bullet-list blue" style="margin-top:8px;">
+            <li>Single synthesis call per research phase — <strong>no tool loops</strong></li>
+            <li>Raw <code>fetch</code> in researcher.ts to preserve Kimi response fields</li>
+            <li>OpenAI SDK for memo generators (structured JSON output)</li>
+            <li>40,000 char truncation before memo generation</li>
+            <li>JSON code-fence stripping before parse</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card" style="padding:18px 22px;">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.08em;">Source files</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+          <div class="card-dark"><code style="background:none;border:none;padding:0;color:var(--accent);">index.ts</code><div style="font-size:11px;color:var(--muted);margin-top:3px;">CLI + orchestration</div></div>
+          <div class="card-dark"><code style="background:none;border:none;padding:0;color:var(--accent);">researcher.ts</code><div style="font-size:11px;color:var(--muted);margin-top:3px;">Tavily → Kimi synthesis</div></div>
+          <div class="card-dark"><code style="background:none;border:none;padding:0;color:var(--accent);">memo-generator.ts</code><div style="font-size:11px;color:var(--muted);margin-top:3px;">Full memo JSON → MD</div></div>
+          <div class="card-dark"><code style="background:none;border:none;padding:0;color:var(--accent);">short-memo-generator.ts</code><div style="font-size:11px;color:var(--muted);margin-top:3px;">Brief memo JSON → MD</div></div>
+          <div class="card-dark"><code style="background:none;border:none;padding:0;color:var(--accent);">pdf-exporter.ts</code><div style="font-size:11px;color:var(--muted);margin-top:3px;">Python/reportlab PDF</div></div>
+          <div class="card-dark"><code style="background:none;border:none;padding:0;color:var(--accent);">utils.ts</code><div style="font-size:11px;color:var(--muted);margin-top:3px;">withRetry() handler</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 4: Full Memo Pipeline ───────────────────────────────── -->
+  <div class="slide" id="s4">
+    <div class="slide-content">
+      <div class="eyebrow">Full Memo Pipeline</div>
+      <h2 style="margin-bottom:28px;">4-Step Research Flow</h2>
+
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div class="card" style="padding:18px 22px;">
+          <div class="step-row">
+            <div class="step-num" style="background:rgba(59,130,246,0.15);color:var(--accent2);">1</div>
+            <div>
+              <div class="step-label">Research — parallel dual track</div>
+              <div class="step-desc"><code>researchCompany()</code> + <code>analyzeSocialSentiment()</code> run simultaneously via <code>Promise.all</code>. Each fires 5 Tavily queries in parallel, then makes a single Kimi synthesis call. Results include full source URL list.</div>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="padding:18px 22px;">
+          <div class="step-row">
+            <div class="step-num" style="background:rgba(59,130,246,0.15);color:var(--accent2);">2</div>
+            <div>
+              <div class="step-label">Memo generation</div>
+              <div class="step-desc"><code>generateMemo()</code> receives merged research + sentiment text, produces a structured <code>InvestmentMemo</code> JSON with 13 fields including <code>companyStatus</code> (ACTIVE / ACQUIRED / IPO / DEFUNCT) which drives conditional rendering.</div>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="padding:18px 22px;">
+          <div class="step-row">
+            <div class="step-num" style="background:rgba(59,130,246,0.15);color:var(--accent2);">3</div>
+            <div>
+              <div class="step-label">Markdown save</div>
+              <div class="step-desc"><code>formatMemoAsMarkdown()</code> renders all sections with Markdown formatting, bullet points, tables, and source list. Saved as <code>memo-{slug}-{yyyymmdd}.md</code>.</div>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="padding:18px 22px;">
+          <div class="step-row">
+            <div class="step-num" style="background:rgba(59,130,246,0.15);color:var(--accent2);">4</div>
+            <div>
+              <div class="step-label">PDF export (optional — <code>--pdf</code>)</div>
+              <div class="step-desc">Generates a Python script using <code>reportlab</code>, executes it, then deletes the temp file. Auto-installs reportlab if not present. Company status gates which sections render.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 5: Brief Memo Pipeline ──────────────────────────────── -->
+  <div class="slide" id="s5">
+    <div class="slide-content">
+      <div class="eyebrow">Brief Memo Pipeline</div>
+      <h2 style="margin-bottom:28px;">2-Step Chinese Research Flow</h2>
+
+      <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px;">
+        <div class="card card-gold" style="padding:18px 22px;">
+          <div class="step-row">
+            <div class="step-num" style="background:rgba(245,158,66,0.15);color:var(--gold);">1</div>
+            <div>
+              <div class="step-label">Research — <code>researchCompanyChinese()</code></div>
+              <div class="step-desc">Fires 5 Tavily queries in parallel: WeChat public articles, official site anchor query, recent news, funding rounds, founder/team. Uses <code>buildSearchContext()</code> to assign globally sequential [N] indices across all results. Returns <code>{ rawContent, sources[] }</code>.</div>
+            </div>
+          </div>
+        </div>
+        <div class="card card-gold" style="padding:18px 22px;">
+          <div class="step-row">
+            <div class="step-num" style="background:rgba(245,158,66,0.15);color:var(--gold);">2</div>
+            <div>
+              <div class="step-label">Memo generation — <code>generateShortMemo()</code></div>
+              <div class="step-desc">Kimi produces a 6-field JSON: <code>headerSnapshot</code>, <code>productAndTechnology</code>, <code>teamBackground</code>, <code>competitiveLandscape</code>, <code>recentDevelopments</code>, <code>analystTake</code>. All facts cited with <code>（来源[N]）</code>; single-source claims flagged <code>（待核实）</code>. Saved as <code>brief-{slug}-{yyyymmdd}.md</code>.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <div class="card-sm card" style="text-align:center;">
+          <div style="font-size:22px;margin-bottom:6px;">🔍</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);">WeChat-first</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:3px;">mp.weixin.qq.com anchored queries</div>
+        </div>
+        <div class="card-sm card" style="text-align:center;">
+          <div style="font-size:22px;margin-bottom:6px;">🏷️</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);">Confidence tagging</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:3px;">（来源[N]） + （待核实）</div>
+        </div>
+        <div class="card-sm card" style="text-align:center;">
+          <div style="font-size:22px;margin-bottom:6px;">⚡</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);">Fast turnaround</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:3px;">2 API calls vs 4+ in full mode</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 6: Full Memo Sections ───────────────────────────────── -->
+  <div class="slide" id="s6">
+    <div class="slide-content">
+      <div class="eyebrow">Full Memo Output</div>
+      <h2 style="margin-bottom:22px;">13 Structured Sections</h2>
+
+      <div class="grid-2" style="align-items:start;">
+        <div class="card" style="padding:18px 22px;">
+          <table>
+            <tbody>
+              <tr><td>Company Status</td><td style="color:var(--text);">ACTIVE / ACQUIRED / IPO / DEFUNCT</td></tr>
+              <tr><td>Executive Summary</td><td style="color:var(--text);">What it does + core thesis</td></tr>
+              <tr><td>Timeline</td><td style="color:var(--text);">Founding, funding, pivots, exits</td></tr>
+              <tr><td>Market Analysis</td><td style="color:var(--text);">TAM/SAM/SOM, growth drivers</td></tr>
+              <tr><td>Product & Tech</td><td style="color:var(--text);">Business model, moat</td></tr>
+              <tr><td>Team Background</td><td style="color:var(--text);">Founders, execs, red flags</td></tr>
+              <tr><td>Traction & Metrics</td><td style="color:var(--text);">ARR, GMV, MAU (model-chosen)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card" style="padding:18px 22px;">
+          <table>
+            <tbody>
+              <tr><td>Competitive Comparison</td><td style="color:var(--text);">Side-by-side vs 2–4 competitors</td></tr>
+              <tr><td>Comparable Transactions</td><td style="color:var(--text);">Valuation multiples (M&A/IPO)</td></tr>
+              <tr><td>Key Risks</td><td style="color:var(--text);">Ranked by severity</td></tr>
+              <tr><td>Data Gaps</td><td style="color:var(--text);">Missing info + 5–10 DD questions</td></tr>
+              <tr><td style="color:var(--gold);">Investment Learnings</td><td style="color:var(--gold);">Case study only (non-Active)</td></tr>
+              <tr><td>Recommendation</td><td style="color:var(--text);">Verdict + rationale + next steps</td></tr>
+            </tbody>
+          </table>
+          <div style="margin-top:12px;font-size:12px;color:var(--muted);">
+            ✦ <span style="color:var(--gold);">Investment Learnings</span> section appears only when status is ACQUIRED / IPO / DEFUNCT — memo is framed as a case study.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 7: Brief Memo Sections ──────────────────────────────── -->
+  <div class="slide" id="s7">
+    <div class="slide-content">
+      <div class="eyebrow">Brief Memo Output</div>
+      <h2 style="margin-bottom:22px;">6 Chinese Sections</h2>
+
+      <div class="grid-3" style="margin-bottom:18px;">
+        <div class="card card-accent" style="padding:18px;">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">Section 1</div>
+          <div style="font-weight:700;color:var(--text);margin-bottom:8px;">基本信息</div>
+          <p style="font-size:12.5px;">Markdown table — 赛道, 成立时间, 总部, 融资阶段, 核心投资方, 累计融资额, 代表产品</p>
+        </div>
+        <div class="card card-accent" style="padding:18px;">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">Section 2</div>
+          <div style="font-weight:700;color:var(--text);margin-bottom:8px;">产品与技术</div>
+          <p style="font-size:12.5px;">核心产品 · 商业模式 · 技术差异化 · 护城河评估 (honest strength/weakness)</p>
+        </div>
+        <div class="card card-accent" style="padding:18px;">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">Section 3</div>
+          <div style="font-weight:700;color:var(--text);margin-bottom:8px;">创始人与团队</div>
+          <p style="font-size:12.5px;">Per-founder subheadings · education · work history · ⚠️ 风险提示 callout</p>
+        </div>
+        <div class="card card-accent" style="padding:18px;">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">Section 4</div>
+          <div style="font-weight:700;color:var(--text);margin-bottom:8px;">竞争格局</div>
+          <p style="font-size:12.5px;">Direct competitor list · Markdown comparison table · 优劣势小结</p>
+        </div>
+        <div class="card card-accent" style="padding:18px;">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">Section 5</div>
+          <div style="font-weight:700;color:var(--text);margin-bottom:8px;">近期动态</div>
+          <p style="font-size:12.5px;">融资历史 table · KPIs with dates · ⚠️ if data &gt;12 months · reverse-chron milestones</p>
+        </div>
+        <div class="card card-gold" style="padding:18px;">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">Section 6</div>
+          <div style="font-weight:700;color:var(--text);margin-bottom:8px;">分析师评语</div>
+          <p style="font-size:12.5px;">核心投资逻辑 · 最大不确定性 · 跟进条件 (2–3 concrete follow-up gates)</p>
+        </div>
+      </div>
+
+      <div class="card-sm card" style="font-size:13px;color:var(--muted);text-align:center;">
+        Every claim tagged <code style="color:var(--accent);">（来源[N]）</code> · Single-source claims additionally flagged <code style="color:var(--gold);">（待核实）</code> · Source URLs listed at bottom
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 8: CLI Reference ─────────────────────────────────────── -->
+  <div class="slide" id="s8">
+    <div class="slide-content">
+      <div class="eyebrow">Usage</div>
+      <h2 style="margin-bottom:24px;">CLI Reference</h2>
+
+      <div class="grid-2" style="align-items:start;">
+        <div>
+          <div class="code-block"><span class="cmt"># Full memo — by name</span>
+<span class="cmd">npm run dev</span> <span class="flag">--</span> <span class="str">"Stripe"</span>
+
+<span class="cmt"># Full memo — by URL</span>
+<span class="cmd">npm run dev</span> <span class="flag">--</span> <span class="str">"https://stripe.com"</span>
+
+<span class="cmt"># Full memo + PDF</span>
+<span class="cmd">npm run dev</span> <span class="flag">-- "Stripe" --pdf</span>
+
+<span class="cmt"># Full memo, skip sentiment</span>
+<span class="cmd">npm run dev</span> <span class="flag">-- "Stripe" --skip-sentiment</span>
+
+<span class="cmt"># Brief Chinese memo</span>
+<span class="cmd">npm run dev</span> <span class="flag">--</span> <span class="str">"https://rezona.ai"</span> <span class="flag">--brief --name</span> <span class="str">Rezona</span>
+
+<span class="cmt"># Interactive prompt</span>
+<span class="cmd">npm run dev</span></div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div class="card">
+            <h3>Output files</h3>
+            <table style="margin-top:8px;">
+              <tbody>
+                <tr><td>Full memo</td><td><code>memo-{slug}-{yyyymmdd}.md</code></td></tr>
+                <tr><td>Brief memo</td><td><code>brief-{slug}-{yyyymmdd}.md</code></td></tr>
+                <tr><td>PDF</td><td><code>memo-{slug}-{yyyymmdd}.pdf</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card card-gold">
+            <h3 style="color:var(--gold);">⚠️ npm flag gotcha</h3>
+            <p style="font-size:13px;margin-top:4px;">Always use <code>--</code> before arguments. Without it, npm intercepts flags like <code>--brief</code> as its own config options and they never reach the script.</p>
+          </div>
+          <div class="card-sm card">
+            <div style="font-size:12px;color:var(--muted);">Setup: <code>.env</code> requires <code>MOONSHOT_API_KEY</code> + <code>TAVILY_API_KEY</code></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 9: Reliability & Limits ─────────────────────────────── -->
+  <div class="slide" id="s9">
+    <div class="bg-glow" style="width:600px;height:600px;background:rgba(0,212,170,0.07);bottom:-150px;left:-100px;"></div>
+    <div class="bg-glow" style="width:400px;height:400px;background:rgba(59,130,246,0.07);top:-100px;right:-100px;"></div>
+
+    <div class="slide-content" style="text-align:center;max-width:900px;margin:0 auto;">
+      <div class="eyebrow">Reliability & Limits</div>
+      <h2 style="margin-bottom:28px;">What to Know</h2>
+
+      <div class="grid-3" style="margin-bottom:24px;text-align:left;">
+        <div class="card card-accent" style="padding:20px;">
+          <div style="font-size:22px;margin-bottom:10px;">🔄</div>
+          <h3>Auto-retry</h3>
+          <p style="font-size:13px;margin-top:4px;"><code>withRetry()</code> catches <code>rate_limit</code> and <code>engine_overloaded</code> errors, waits 60s, retries indefinitely. All other errors are rethrown immediately.</p>
+        </div>
+        <div class="card" style="padding:20px;">
+          <div style="font-size:22px;margin-bottom:10px;">📡</div>
+          <h3 style="color:var(--accent2);">Live search</h3>
+          <p style="font-size:13px;margin-top:4px;">Tavily provides current results — not bounded by Kimi's training cutoff. Relevance filtered at score ≥ 0.3 with a domain blocklist for noise reduction.</p>
+        </div>
+        <div class="card" style="padding:20px;">
+          <div style="font-size:22px;margin-bottom:10px;">🗃️</div>
+          <h3 style="color:var(--accent2);">Context limit</h3>
+          <p style="font-size:13px;margin-top:4px;">Research content truncated at <strong style="color:var(--text);">40,000 chars</strong> before memo generation. JSON output is stripped of code fences before parsing.</p>
+        </div>
+      </div>
+
+      <div class="grid-2" style="text-align:left;">
+        <div class="card-sm card">
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px;">Known ambiguity issue</div>
+          <p style="font-size:12.5px;">Generic or homonymous brand names (e.g. "Wanaka", "Rezona") can attract irrelevant search results. Mitigate with the <code>--name</code> flag alongside a URL to anchor official-site queries.</p>
+        </div>
+        <div class="card-sm card">
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px;">Source citation integrity</div>
+          <p style="font-size:12.5px;">All Tavily URLs are numbered globally before synthesis. The model's inline <code>[N]</code> references map directly to the numbered sources list at the bottom of every memo.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /deck -->
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const dotsEl = document.getElementById('dots');
+  const progress = document.getElementById('progress');
+  const counter = document.getElementById('counter');
+  const total = slides.length;
+  let current = 0, animating = false;
+
+  slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.addEventListener('click', () => goTo(i));
+    dotsEl.appendChild(d);
+  });
+
+  function updateUI() {
+    dotsEl.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === current));
+    progress.style.width = ((current + 1) / total * 100) + '%';
+    counter.textContent = (current + 1) + ' / ' + total;
+    document.getElementById('prevBtn').style.opacity = current === 0 ? '0.3' : '1';
+    document.getElementById('nextBtn').style.opacity = current === total - 1 ? '0.3' : '1';
+  }
+
+  function goTo(idx) {
+    if (animating || idx === current || idx < 0 || idx >= total) return;
+    animating = true;
+    const from = slides[current], to = slides[idx];
+    const dir = idx > current ? 1 : -1;
+    from.classList.remove('active');
+    from.classList.add('exit');
+    from.style.transform = `translateX(${dir * -60}px)`;
+    to.style.transform = `translateX(${dir * 60}px)`;
+    to.style.opacity = '0';
+    to.classList.add('active');
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      to.style.transform = 'translateX(0)';
+      to.style.opacity = '1';
+    }));
+    setTimeout(() => {
+      from.classList.remove('exit');
+      from.style.transform = from.style.opacity = '';
+      animating = false;
+    }, 450);
+    current = idx;
+    updateUI();
+  }
+
+  document.getElementById('prevBtn').addEventListener('click', () => goTo(current - 1));
+  document.getElementById('nextBtn').addEventListener('click', () => goTo(current + 1));
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goTo(current + 1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   goTo(current - 1);
+  });
+  let tx = 0;
+  document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; });
+  document.addEventListener('touchend',   e => { const dx = e.changedTouches[0].clientX - tx; if (Math.abs(dx) > 50) goTo(current + (dx < 0 ? 1 : -1)); });
+
+  updateUI();
+</script>
+</body>
+</html>

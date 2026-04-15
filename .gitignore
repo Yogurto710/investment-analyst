@@ -12,6 +12,7 @@ dist/
 memo-*.md
 brief-*.md
 slides-*.html
+!slides-ai_analyst_overview.html
 _temp_pdf_generator.py
 *.pdf
 

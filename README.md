@@ -123,6 +123,18 @@ The sentiment module (full memo only) searches for authentic user voices on Redd
 - Competitor comparisons from user discussions
 - Red flags (e.g. recurring data loss reports, support failures)
 
+## Interactive Overview
+
+[`slides-ai_analyst_overview.html`](slides-ai_analyst_overview.html) is a zero-dependency HTML slide deck (open in any browser) covering:
+
+- The two pipelines side by side
+- Architecture: how Tavily search feeds into Kimi synthesis
+- Full memo and brief memo sections
+- CLI reference with annotated examples
+- Reliability notes: retry behaviour, source filtering, context limits
+
+Navigate with arrow keys, on-screen buttons, or swipe.
+
 ## Project Structure
 
 ```
@@ -142,4 +154,3 @@ src/
 - Research content is truncated at 40,000 characters before memo generation
 - The tool retries automatically on rate limit and engine overload errors (60s wait per retry)
 - PDF export writes a temporary Python script (`_temp_pdf_generator.py`) and deletes it after use
-- See [CLAUDE.md](CLAUDE.md) for implementation details
