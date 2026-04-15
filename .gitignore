@@ -11,6 +11,7 @@ dist/
 # Generated output files
 memo-*.md
 brief-*.md
+!brief-rezona-20260414.md
 slides-*.html
 !slides-ai_analyst_overview.html
 _temp_pdf_generator.py

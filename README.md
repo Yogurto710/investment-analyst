@@ -123,6 +123,16 @@ The sentiment module (full memo only) searches for authentic user voices on Redd
 - Competitor comparisons from user discussions
 - Red flags (e.g. recurring data loss reports, support failures)
 
+## Example Output
+
+[`brief-rezona-20260414.md`](brief-rezona-20260414.md) is a sample brief memo generated for **Rezona** (AI game generation platform, backed by Jinqiu Fund), produced with:
+
+```bash
+npm run dev -- "https://www.rezona.ai/" --brief --name Rezona
+```
+
+It demonstrates the full brief memo format: header snapshot table, product & technology analysis, team background with risk callouts, competitive landscape, recent developments, and an analyst take with concrete follow-up conditions.
+
 ## Interactive Overview
 
 [`slides-ai_analyst_overview.html`](slides-ai_analyst_overview.html) is a zero-dependency HTML slide deck (open in any browser) covering:
